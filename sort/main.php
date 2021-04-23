@@ -67,7 +67,7 @@ var_dump($arr);
 
 
 //归并排序
-$arr = [3,2,5,4,6,9,7,1];
+$arr = [3,2,5,4,6,9,7,1,9,8,4,5];
 $n = count($arr);
 
 function merge_sort($arr,$n) {
@@ -77,24 +77,43 @@ function merge_sort($arr,$n) {
 function merge_sort_c($arr,$start,$end) {
     //终止条件
     if($start >= $end)
-        return;
+        return [$arr[$end]];
     //取中间位置
-    $middle = ceil(($end + 1) / 2);
-
-    merge_sort_c($arr,$start,$middle);
-    merge_sort_c($arr,$middle + 1,$end);
-
+    $middle = floor(($start + $end) / 2);
+    $left = merge_sort_c($arr,$start,$middle);
+    $right = merge_sort_c($arr,$middle + 1,$end);
+    //分到最小粒度，然后排序
+    return merge_arr($left,$right);
 }
 
+//将已经有序的数组合并成有序数组
 function merge_arr($left,$right){
-
-    $temp = [];
-
+    $tmp = []; //申请临时数组
+    $count_left = count($left);
+    $count_right = count($right);
+    $i = 0;
+    $j = 0;
+    while ( $i < $count_left || $j < $count_right) {
+        if(!isset($left[$i]) && isset($right[$j])) {
+            $tmp = array_merge($tmp,array_slice($right,$j));
+            break;
+        }
+        if(!isset($right[$j]) && isset($left[$i])) {
+            $tmp = array_merge($tmp,array_slice($left,$i));
+            break;
+        }
+        if($left[$i] > $right[$j]) {
+            $tmp[] = $right[$j];
+            $j++;
+        } else {
+            $tmp[] = $left[$i];
+            $i++;
+        }
+    }
+    return $tmp;
 }
-
-
-var_dump($arr);
-
+echo '归并排序算法：稳定排序算法；空间复杂度：O(n)，原地排序算法，最好情况、最坏情况，还是平均情况，时间复杂度都是 O(nlogn)'.PHP_EOL;
+var_dump(merge_sort($arr,$n));
 
 $a = 4;
 $b = 5;
@@ -111,6 +130,7 @@ $a = $b;
 var_dump($a,$b);
 
 
+//快速排序  空间复杂度O(1)
 function quickSort(&$arr){
     $count = count($arr);
     return quickSortInternally($arr,0,$count - 1);
@@ -124,7 +144,8 @@ function quickSortInternally(&$arr,$l,$r){
     quickSortInternally($arr,$i+1,$r);
 }
 
-//快速排序  空间复杂度O(1)
+//就是随机选择一个元素作为 pivot（分区点），将小于 pivot 的放到左边，将大于 pivot 的放到右边，将 pivot 放到中间
+//已处理区间和未处理区间
 function partition(&$arr,$l,$r){
     $i = $l;
     $partition = $arr[$r];
@@ -137,14 +158,12 @@ function partition(&$arr,$l,$r){
     [$arr[$i],$arr[$r]] = [$arr[$r],$arr[$i]];
     return $i;
 }
-
 $a1 = [1,4,6,2,3,5,4];
 quickSort($a1);
-
+echo '快速排序算法：不稳定排序算法；空间复杂度：O(1)，原地排序算法，最好情况、最坏情况，还是平均情况，时间复杂度都是 O(nlogn)'.PHP_EOL;
 var_dump($a1);
 
-
-//O(n) 时间复杂度内求无序数组中的第 K 大元素
+//O(n) 时间复杂度内求无序数组中的第 K 大元素 ，快速排序思想
 function quickSortInternally_new(&$arr,$l,$r,$k){
     if ($l >= $r || $l + 1 == $k)
         return $arr[$l];
