@@ -11,7 +11,8 @@ git status //获取当前仓库状态
 git diff 文件名  //文件修改前后差异
 
 git log //显示提交日志
-加上 --pretty=oneline 参数，日志显示一行
+        加上 --pretty=oneline 参数，日志显示一行
+git reflog用来记录你的每一次命令（可以查找版本号）
 
 git reset 版本回退：
     当前版本是HEAD，也就是最新的提交,
@@ -22,11 +23,13 @@ git reset --hard 版本号
 版本回退之后，顺便把工作区的文件也更新了，工作区文件也就是回退到那个版本的修改
 
 git reset --soft HEAD^   往前回退一个版本，并且将这次错误的提交的代码改动，放在暂存区里。（回退上上个版本，本次版本放到暂存区里）
-git restore --staged <文件>...  取消暂存
+    配套：git restore --staged <文件>...  取消暂存
 
 git reset HEAD^  往前回退一个版本，并且将这次错误的提交的代码改动，放在工作区里。 （回退上上个版本，本次版本放到工作区里）
+    配套：git restore <文件>  丢弃工作区的改动
+         或者
+         git checkout <文件>
 
-最终修改完之后：
+执行完git reset 之后，强制推送至仓库（版本回退）：
 git push origin HEAD --force  强推送至远程仓库，回退版本
 
-git reflog用来记录你的每一次命令（可以查找版本号）
