@@ -1,7 +1,7 @@
 # php
 安装composer
-curl -sS https://getcomposer.org/installer | php
-mv composer.phar /usr/local/bin/composer
+curl -sS https://getcomposer.org/installer | php \n
+mv composer.phar /usr/local/bin/composer     \n
 
 执行
 composer install 解决依赖
