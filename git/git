@@ -33,3 +33,7 @@ git reset HEAD^  往前回退一个版本，并且将这次错误的提交的代
 执行完git reset 之后，强制推送至仓库（版本回退）：
 git push origin HEAD --force  强推送至远程仓库，回退版本
 
+git add 把文件提交到暂存区
+    从暂存区撤回：git reset HEAD 文件
+
+
