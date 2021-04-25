@@ -14,3 +14,11 @@ git log //显示提交日志
 加上 --pretty=oneline 参数，日志显示一行
 
 git reset 版本回退：
+    当前版本是HEAD，也就是最新的提交,
+    上一个版本就是HEAD^，
+    上上一个版本就是HEAD^^。
+git reset --hard HEAD^
+git reset --hard 版本号
+版本回退之后，顺便把工作区的文件也更新了，工作区文件也就是回退到那个版本的修改
+
+git reflog用来记录你的每一次命令（可以查找版本号）
