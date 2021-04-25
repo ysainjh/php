@@ -115,21 +115,6 @@ function merge_arr($left,$right){
 echo '归并排序算法：稳定排序算法；空间复杂度：O(n)，原地排序算法，最好情况、最坏情况，还是平均情况，时间复杂度都是 O(nlogn)'.PHP_EOL;
 var_dump(merge_sort($arr,$n));
 
-$a = 4;
-$b = 5;
-
-[$a,$b] = [$b,$a];
-
-var_dump([$a,$b]);
-
-var_dump($a,$b);
-
-$b = $a;
-$a = $b;
-
-var_dump($a,$b);
-
-
 //快速排序  空间复杂度O(1)
 function quickSort(&$arr){
     $count = count($arr);
@@ -163,40 +148,16 @@ quickSort($a1);
 echo '快速排序算法：不稳定排序算法；空间复杂度：O(1)，原地排序算法，最好情况、最坏情况，还是平均情况，时间复杂度都是 O(nlogn)'.PHP_EOL;
 var_dump($a1);
 
-//O(n) 时间复杂度内求无序数组中的第 K 大元素 ，快速排序思想
-function quickSortInternally_new(&$arr,$l,$r,$k){
-    if ($l >= $r || $l + 1 == $k)
-        return $arr[$l];
-    $i = partition_new($arr,$l,$r);
-    //var_dump($i);
-    //var_dump($arr);
-    if($i + 1 == $k)
-        return $arr[$i];
-    elseif($i + 1 > $k) {
-        quickSortInternally_new($arr,$l,$i - 1,$k);
-        echo 33;
-    } else {
-        quickSortInternally_new($arr,$i+1,$r,$k - $i + 1);
-        echo 44;
-        var_dump($arr);
-    }
-}
-//从大到小排序
-function partition_new(&$arr,$l,$r){
-    $i = $l;
-    $partition = $arr[$r];
-    for($j = $l;$j < $r;$j++) {
-        if($arr[$j] > $partition) {
-            [$arr[$i],$arr[$j]] = [$arr[$j],$arr[$i]];
-            $i++;
-        }
-    }
-    [$arr[$i],$arr[$r]] = [$arr[$r],$arr[$i]];
-    return $i;
-}
+//O(n) 时间复杂度内求无序数组中的第 K 大元素 （快排思想）
+//
+//现在你有 10 个接口访问日志文件，每个日志文件大小约 300MB，
+//每个文件里的日志都是按照时间戳从小到大排序的。你希望将这 10 个较小的日志文件，合并为 1 个日志文件，
+//合并之后的日志仍然按照时间戳从小到大排列。如果处理上述排序任务的机器内存只有 1GB，你有什么好的解决思路，能“快速”地将这 10 个日志文件合并吗？
 
-$a1 = [1,4,6,2,3,5,4];
-var_dump(quickSortInternally_new($a1,0,count($a1) - 1,4));
+//桶排序时间复杂度O(n)
+//桶排序，顾名思义，会用到“桶”，核心思想是将要排序的数据分到几个有序的桶里，
+//每个桶里的数据再单独进行排序。桶内排完序之后，再把每个桶里的数据按照顺序依次取出，组成的序列就是有序的了。
+//每个桶内部使用快速排序。
 
 //计数排序
 //考试成绩数组，最低0分，最高5分

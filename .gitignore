@@ -1,2 +1,4 @@
 vendor
 composer.lock
+file/tmp
+file/file.txt
