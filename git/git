@@ -14,6 +14,7 @@ git log //显示提交日志
         加上 --pretty=oneline 参数，日志显示一行
 git reflog用来记录你的每一次命令（可以查找版本号）
 
+---------------------git reset 版本回退----------------
 git reset 版本回退：
     当前版本是HEAD，也就是最新的提交,
     上一个版本就是HEAD^，
@@ -33,7 +34,13 @@ git reset HEAD^  往前回退一个版本，并且将这次错误的提交的代
 执行完git reset 之后，强制推送至仓库（版本回退）：
 git push origin HEAD --force  强推送至远程仓库，回退版本
 
+---------------------git reset 回退暂存区至工作区----------------
 git add 把文件提交到暂存区
-    从暂存区撤回：git reset HEAD 文件
+    从暂存区撤回：git reset <HEAD> 文件
+
+git reset命令既可以回退版本，也可以把暂存区的修改回退到工作区。当我们用HEAD时，表示最新的版本。
+
+
+git rm 从版本库中删除文件
 
 
