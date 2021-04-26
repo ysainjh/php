@@ -15,6 +15,11 @@ git log //显示提交日志
 git reflog用来记录你的每一次命令（可以查找版本号）
 
 ---------------------git reset 版本回退----------------
+本地分支回退：
+git reflog
+git commit 之后，的撤销 git reset --hard HEAD^
+
+自己远程分支回退：
 git reset 版本回退：
     当前版本是HEAD，也就是最新的提交,
     上一个版本就是HEAD^，
@@ -32,9 +37,13 @@ git reset HEAD^  往前回退一个版本，并且将这次错误的提交的代
          git checkout <文件>
 
 执行完git reset 之后，强制推送至仓库（版本回退）：
-git push origin HEAD --force  强推送至远程仓库，回退版本
+git push origin HEAD --force  强推送至远程仓库，回退版本 (git push -f)
 
-git commit 之后的撤销 git reset HEAD^
+公共远程分支版本回退的方法
+使用git reset回退公共远程分支的版本后，需要其他所有人手动用远程master分支覆盖本地master分支，显然，这不是优雅的回退方法
+git revert HEAD       撤销最近一次修改
+git revert commit_id  撤销修改
+git revert 命令意思是撤销某次提交。它会产生一个新的提交，虽然代码回退了，但是版本依然是向前的，所以，当你用revert回退之后，所有人pull之后，他们的代码也自动的回退了。git revert 命令的好处就是不会丢掉别人的提交，即使你撤销后覆盖了别人的提交，他更新代码后，可以在本地用 reset 向前回滚，找到自己的代码，然后拉一下分支，再回来合并上去就可以找回被你覆盖的提交了。
 
 ---------------------git reset 回退暂存区至工作区----------------
 git add 把文件提交到暂存区
@@ -62,8 +71,46 @@ git branch -d 分支  删除分支
 
 
 ---------------------git 解决冲突--------------------------
+git log --graph --pretty=oneline --abbrev-commit 查看分支合并情况
+git log --graph 查看分支合并图
+
+---------------------git 储藏功能--------------------------
+git stash
+git stash list 查看储藏内容
+恢复
+1、用git stash apply  恢复后，stash内容并不删除，你需要用git stash drop来删除；
+2、用git stash pop，恢复的同时把stash内容也删了
+恢复指定的stash：
+git stash apply stash@{0}
+
+
+---------------------git 远程-----------------------------
+git remote add origin git@github.com:ysainjh/php.git  关联远程仓库
+git push -u origin master 推送本地库内容至远程仓库，第一次推送远程仓库是空的，加-u
+
+git config --get remote.origin.url  查看git远程路径
+git remote 查看远程仓库信息
+git remote -v  显示更详细的信息（显示了可以抓取和推送的origin的地址）
+git checkout -b dev origin/dev  要在dev分支上开发，就必须创建远程origin的dev分支到本地
+                                在本地创建和远程分支的对应
+git branch --set-upstream dev origin/dev    建立本地分支和远程分支的关联
+
+
+---------------------git 标签-------------------------------
+git tag <name>  <commit id> 打标签,默认标签是打在最新提交的commit上的
+git tag  查看标签
+git show <tagname>   查看标签信息
+git push origin <tagname>  推送标签到远程
+git push origin --tags     一次性推送全部尚未推送到远程的本地标签
+git tag -d <tagname>  删除标签
+
+如果标签已经推送到远程，要删除远程标签就麻烦一点，先从本地删除：
+git tag -d <tagname>
+然后，从远程删除：
+git push origin :refs/tags/<tagname>
 
 
 
+------------------git revert--------------------------------
 
 
