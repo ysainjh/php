@@ -6,6 +6,7 @@ mv composer.phar /usr/local/bin/composer<br/>
 composer install 解决依赖<br/>
 
 2021.4.25 新增php文件操作一些方法<br/>
+          新增git操作<br/>
 2021.4.23 新增排序方法详解<br/>
 
 

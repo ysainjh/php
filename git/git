@@ -59,6 +59,7 @@ git rm 从版本库中删除文件
 git branch -b 分支 创建并且切换到新分支
 git branch 分支 切换分支
 git branch 命令会列出所有分支，当前分支前面会标一个*号
+git branch 分支名  commit_id 创建分支（按照版本号）
 
 合并分支至master
 git checkout master
@@ -67,8 +68,6 @@ git merge 开发分支
 git merge 分支名称 命令用于合并指定分支到当前分支
 
 git branch -d 分支  删除分支
-
-
 
 ---------------------git 解决冲突--------------------------
 git log --graph --pretty=oneline --abbrev-commit 查看分支合并情况
@@ -95,7 +94,6 @@ git checkout -b dev origin/dev  要在dev分支上开发，就必须创建远程
                                 在本地创建和远程分支的对应
 git branch --set-upstream dev origin/dev    建立本地分支和远程分支的关联
 
-
 ---------------------git 标签-------------------------------
 git tag <name>  <commit id> 打标签,默认标签是打在最新提交的commit上的
 git tag  查看标签
@@ -109,8 +107,12 @@ git tag -d <tagname>
 然后，从远程删除：
 git push origin :refs/tags/<tagname>
 
-
-
-------------------git revert--------------------------------
-
-
+------------------git 查看修改文件--------------------------------
+git log --name-status 每次修改的文件列表, 显示状态
+git log --name-only 每次修改的文件列表
+git log --stat 每次修改的文件列表, 及文件修改的统计
+git whatchanged 每次修改的文件列表
+git whatchanged --stat 每次修改的文件列表, 及文件修改的统计
+git show 显示最后一次的文件改变的具体内容
+git show -5 显示最后 5 次的文件改变的具体内容
+git show commitid 显示某个 commitid 改变的具体内容
