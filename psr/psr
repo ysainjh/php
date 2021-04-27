@@ -1,0 +1,380 @@
+PHP PSR标准规范
+
+PSR-4 自动加载规范
+PSR-4 描述了从文件路径中 自动加载 类的规范。它拥有非常好的兼容性，并且可以在任何自动加载规范中使用，PSR-4 规范也描述了放置 autoload 文件（就是我们经常引入的 vendor/autoload.php）的位置。
+PSR-4 是为了给可交互的 PHP 自动加载器指定一个将命名空间映射到文件系统的规则，并且可以与其他 SPL 注册的自动加载器共存。PSR-4 不是 PSR-0 的替代品，而是对它的补充。
+
+自动加载的类型：
+composer 提供了几种自动加载类型：
+1、classmap
+2、psr-0
+3、psr-4
+4、files
+
+理论上来说，
+项目代码用 psr-4 自动加载，
+helper 用 files 自动加载，
+development 相关用 classmap 自动加载，
+psr-0 已经被抛弃了。
+
+classmap
+{
+  "classmap": ["src/"]
+}
+然后composer读取文件夹src中所有的文件，然后再vendor/composer/autoload_classmap.php中将所有的class的namespace + classname生成成一个key => value的php数组。
+
+psr-4
+{
+  "name": "acme/util",
+  "auto" : {
+    "psr-4": {
+      "Acme\\Util\\": "src/"
+    }
+  }
+}
+将 Acme\Util 指向了 src 之后 psr-4 就会默认所有的 src 下面的 class 都已经有了 Acme\Util 的 基本 namespace
+类比：
+vendor/
+  acme/
+    util/
+      composer.json
+      src/
+        ClassName.php
+
+
+
+php自动加载功能__autoload()到spl_autoload_register()演变
+
+php自动加载功能的由来：
+    在PHP开发过程中，如果希望从外部引入一个 Class ，通常会使用 include 和 require 方法，去把定义这个 Class 的文件包含进来。在小规模开发的时候，没什么大问题。
+但在大型的开发项目中，使用这种方式会带来一些隐含的问题：
+如果一个 PHP 文件需要使用很多其它类，那么就需要很多的 require/include 语句，
+这样有可能会造成遗漏或者引入不必要的类文件。如果大量的文件都需要使用其它的类，那么要保证每个文件都包含正确的类文件肯定是一个噩梦，况且require或include的性能代价很大。
+    PHP5为这个问题提供了一个解决方案，这就是 类的自动加载(autoload)机制。
+    autoload机制可以使得PHP程序有可能在使用类时才自动包含类文件，而不是一开始就将所有的类文件include进来，这种机制也称为Lazy loading(惰性加载)。
+总结起来，自动加载功能带来了几处优点：
+1、使用类之前无需include/require
+2、使用类的时候才会include/require文件，实现了lazy loading，避免了include/require多余文件。
+3、无需考虑引入类的实际磁盘地址 ，实现了逻辑和实体文件的分离。
+
+PHP自动加载函数__autoload()：
+从PHP5开始，当我们在使用一个类时，如果发现这个类没有加载，就会自动运行 __autoload() 函数，这个函数是我们在程序中自定义的，在这个函数中我们可以加载需要使用的类。
+<?php
+function __autoload($classname) {
+        require_once ($classname . ".class.php");
+}
+我们直接将类名加上扩展名.class.php构成了类文件名，然后使用require_once将其加载。
+从这个例子中，我们可以看出 __autoload 至少要做三件事情：
+1、根据类名确定类文件名；
+2、确定类文件所在的磁盘路径；
+3、将类从磁盘文件中加载到系统中。
+第三步最简单，只需要使用include/require即可。要实现第一步，第二步的功能，必须在开发时约定类名与磁盘文件的映射方法，只有这样我们才能根据类名找到它对应的磁盘文件。
+当有大量的类文件要包含的时候，我们只要确定相应的规则，然后在__autoload()函数中，将类名与实际的磁盘文件对应起来，就可以实现lazy loading的效果 。
+
+__autoload()函数存在的问题
+如果在一个系统的实现中，如果需要使用很多其它的类库，这些类库可能是由不同的开发人员编写的，其类名与实际的磁盘文件的映射规则不尽相同。这时如果要实现类库文件的自动加载，就必须在 __autoload()函数中将所有的映射规则全部实现，这样的话 __autoload()函数有可能会非常复杂，甚至无法实现。最后可能会导致__autoload() 函数十分臃肿，这时即便能够实现，也会给将来的维护和系统效率带来很大的负面影响。
+那么问题出现在哪里呢？问题出现在 __autoload() 是全局函数只能定义一次 ，不够灵活，所以所有的类名与文件名对应的逻辑规则都要在一个函数里面实现，造成这个函数的臃肿。
+
+如何来解决这个问题呢？
+使用一个__autoload调用堆栈，不同的映射关系写到不同的__autoload函数中去，然后统一注册统一管理，这个就是PHP5引入的SPL Autoload。
+SPL是Standard PHP Library(标准PHP库)的缩写。
+它是PHP5引入的一个扩展标准库，包括spl autoload相关的函数以及各种数据结构和迭代器的接口或类。spl autoload相关的函数具体可见php中spl_autoload
+<?php
+
+// __autoload 函数
+//
+// function __autoload($class) {
+//     include 'classes/' . $class . '.class.php';
+// }
+function my_autoloader($class) {
+    include 'classes/' . $class . '.class.php';
+}
+spl_autoload_register('my_autoloader');
+
+
+// 定义的 autoload 函数在 class 里
+
+// 静态方法
+class MyClass {
+  public static function autoload($className) {
+    // ...
+  }
+}
+spl_autoload_register(array('MyClass', 'autoload'));
+
+
+// 非静态方法
+class MyClass {
+  public function autoload($className) {
+    // ...
+  }
+}
+$instance = new MyClass();
+spl_autoload_register(array($instance, 'autoload'));
+
+spl_autoload_register()就是我们上面所说的__autoload调用堆栈，我们可以向这个函数注册多个我们自己的autoload()函数，当PHP 找不到类名时，PHP就会调用这个堆栈，然后去调用自定义的autoload()函数，实现自动加载功能。如果我们不向这个函数输入任何参数，那么就会默认注册spl_autoload()函数。
+
+如果需要多条autoload函数，spl_autoload_register()满足了此类需求。它实际上创建了autoload函数的队列，按定义时的顺序逐个执行。相比之下， __autoload()只可以定义一次。
+spl_autoload_unregister  注销已注册的 __autoload()函数。
+
+PSR-4规范
+PSR-4规范了如何指定文件路径从而自动加载类定义，同时规范了自动加载文件的位置。
+1）一个完整的类名需具有以下结构：
+  \<命名空间>\<子命名空间>\<类名>
+  完整的类名必须要有一个顶级命名空间，被称为 "vendor namespace"；
+  完整的类名可以有一个或多个子命名空间；
+  完整的类名必须有一个最终的类名；
+  完整的类名中任意一部分中的下滑线都是没有特殊含义的；
+  完整的类名可以由任意大小写字母组成；
+  所有类名都必须是大小写敏感的。
+
+2）根据完整的类名载入相应的文件
+  完整的类名中，去掉最前面的命名空间分隔符，前面连续的一个或多个命名空间和子命名空间，作为「命名空间前缀」，其必须与至少一个「文件基目录」相对应；
+  紧接命名空间前缀后的子命名空间 必须 与相应的「文件基目录」相匹配，其中的命名空间分隔符将作为目录分隔符。
+  末尾的类名必须与对应的以 .php 为后缀的文件同名。
+  自动加载器（autoloader）的实现一定不可抛出异常、一定不可触发任一级别的错误信息以及不应该有返回值。
+
+3）例子
+类名：ZendAbc
+命名空间前缀：Zend
+文件基目录：/usr/includes/Zend/
+文件路径：/usr/includes/Zend/Abc.php
+
+类名：SymfonyCoreRequest
+命名空间前缀：SymfonyCore
+文件基目录：./vendor/Symfony/Core/
+文件路径：./vendor/Symfony/Core/Request.php
+
+
+目录结构：
+-vendor/
+| -vendor_name/
+| | -package_name/
+| | | -src/
+| | | | -ClassName.php       # Vendor_Name\Package_Name\ClassName
+| | | -tests/
+| | | | -ClassNameTest.php   # Vendor_Name\Package_Name\ClassNameTest
+
+
+-------------------------------Composer 自动加载原理解析---------------------------------------
+Composer自动加载所用到的源文件
+1、autoload_real.php: 自动加载功能的引导类。
+  composer 加载类的初始化(顶级命名空间与文件路径映射初始化)和注册(spl_autoload_register())。
+2、ClassLoader.php : composer 加载类。
+  composer 自动加载功能的核心类。
+3、autoload_static.php : 顶级命名空间初始化类，
+  用于给核心类初始化顶级命名空间。
+4、autoload_classmap.php : 自动加载的最简单形式，
+  有完整的命名空间和文件目录的映射；
+5、autoload_files.php : 用于加载全局函数的文件，
+  存放各个全局函数所在的文件路径名；
+6、autoload_namespaces.php : 符合 PSR0 标准的自动加载文件，
+  存放着顶级命名空间与文件的映射；
+7、autoload_psr4.php : 符合 PSR4 标准的自动加载文件，
+  存放着顶级命名空间与文件的映射；
+
+autoload_real 引导类（详见autoload_real.php）
+在vendor目录下的autoload.php文件中我们可以看出，程序主要调用了引导类的静态方法 getLoader()
+详见文件备注：
+
+小结：
+如果我们在代码中写下 new phpDocumentor\Reflection\Element()，
+PHP会通过SPL_autoload_register调用loadClass->findFile->findFileWithExtension。
+步骤如下：
+1、将 \ 转为文件分隔符/，加上后缀php，变成$logicalPathPsr4, 即 phpDocumentor/Reflection//Element.php;
+2、利用命名空间第一个字母p作为前缀索引搜索 prefixLengthsPsr4 数组，查到下面这个数组：
+  p' =>
+      array (
+          'phpDocumentor\\Reflection\\' => 25,
+          'phpDocumentor\\Fake\\' => 19,
+      )，
+3、遍历这个数组，得到两个顶层命名空间 phpDocumentor\Reflection\ 和 phpDocumentor\Fake\
+4、在这个数组中查找 phpDocumentor\Reflection\Element，找出 phpDocumentor\Reflection\ 这个顶层命名空间并且长度为25。
+5、在prefixDirsPsr4 映射数组中得到phpDocumentor\Reflection\ 的目录映射为：
+  'phpDocumentor\\Reflection\\' =>
+        array (
+            0 => __DIR__ . '/..' . '/phpdocumentor/reflection-common/src',
+            1 => __DIR__ . '/..' . '/phpdocumentor/type-resolver/src',
+            2 => __DIR__ . '/..' . '/phpdocumentor/reflection-docblock/src',
+  ),
+6、遍历这个映射数组，得到三个目录映射；
+7、查看 “目录+文件分隔符//+substr(&dollar;logicalPathPsr4, &dollar;length)”文件是否存在，存在即返回。这里就是
+'__DIR__/../phpdocumentor/reflection-common/src + substr(phpDocumentor/Reflection/Element.php,25)'
+8、如果失败，则利用 fallbackDirsPsr4 数组里面的目录继续判断是否存在文件
+
+
+
+
+
+
+
+---------------------------php闭包和匿名函数------------------------------------------
+匿名函数：
+匿名函数其实就是没有名称的函数，匿名函数可以赋值给变量，还能像其他任何PHP函数对象那样传递。
+不过匿名函数仍然是函数，因此可以调用，还可以传入参数，适合作为函数或方法的回调。
+
+闭包是指在创建时封装周围状态的函数，即使闭包所在的环境的不存在了，闭包中封装的状态依然存在。
+
+创建匿名函数：
+将匿名函数赋给一个变量，通过变量名+()的形式来调用
+$greet = function () {
+    return "Hello World";
+};
+echo $greet();
+匿名函数和普通的PHP函数很像：常用的句法相同，也接受参数，而且能返回值。不过闭包没有函数名。
+注：我们之所以能调用$greet变量，是因为这个变量的值是一个闭包，而且闭包对象实现了__invoke()魔术方法，只要变量名后有()，PHP就会查找并调用__invoke方法。
+通常把匿名函数当做函数或方法的回调使用，事实上，很多PHP函数都会用到匿名函数，比如array_map和preg_replace_callback，这是使用PHP匿名函数的绝佳时机。记住，闭包和其他值一样，可以作为参数传入其他PHP函数：
+$numberPlusOne = array_map(function ($number) {
+    return $number += 1;
+}, [1, 2, 3]);
+
+print_r($numberPlusOne);
+在匿名函数出现之前，要实现这样的功能，PHP开发者只能单独创建具名函数，然后使用名称引用这个函数：
+function incrementNumber ($number) {
+    return $number += 1;
+}
+$numberPlusOne = array_map(‘incrementNumber’,  [1, 2, 3]);
+print_r($numberPlusOne);
+这样做把回调的实现和使用场所隔离开了，而且使用闭包实现代码更加简洁。
+
+创建闭包：
+包含自由变量的函数与为所有这些自由变量提供了变量绑定的环境一起，被称为闭包。
+将匿名函数在普通函数中当做参数传入，也可以被返回。这就实现了一个简单的闭包。
+function makeHelloWorld($name) {
+    $i = 0;
+    return function()use($name, &$i){
+        echo $name.$i. ' <br>';
+        $i++;
+    };
+
+}
+$hello1 = makeHelloWorld("itbsl");
+$hello2 = makeHelloWorld("kevin");
+$hello1();   //itbsl0
+$hello1();   //itbsl1
+$hello1();   //itbsl2
+$hello2();   //kevin0
+从父作用域继承变量（使用use关键字）
+在PHP中必须手动调用闭包对象的bindTo方法或使用use关键字把父作用域的变量及状态附加到PHP闭包中。
+而实际应用中，又以使用use关键字实现居多。
+use关键字
+Laravel框架中也大量使用了闭包，最常见的比如路由定义：
+Route::group(['domain' => '{account}.myapp.com'], function () {
+    Route::get('user/{id}', function ($account, $id) {
+        //
+    });
+});
+这里面的两个function都是匿名函数。而从父作用域继承变量的使用场景在Laravel底层源码中也是俯拾即是，比如：
+Model.php（vendor/laravel/framework/src/Illuminate/Database/Eloquent/Model.php）的saveOrFail方法：
+public function saveOrFail(array $options = [])
+{
+    return $this->getConnection()->transaction(function () use ($options) {
+        return $this->save($options);
+    });
+}
+该方法的作用是使用事务将模型数据保存到数据库，这里面我们使用匿名函数返回保存状态，同时使用use关键字将父作用域的$options传递给该闭包以便其能够访问这个数据。
+此外，还支持传递多个父作用域变量到匿名函数，多个变量以逗号分隔即可。
+
+bindTo方法
+闭包是一个对象，所以我们可以在闭包中使用$this关键字获取闭包的内部状态，闭包对象的默认状态没什么用，需要注意的是其中的__invoke魔术方法和bindTo方法。
+__invoke的作用前面已经说过，当尝试以调用函数的方式调用一个对象时，__invoke() 方法会被自动调用。
+通过bindTo方法，我们可以把闭包的内部状态绑定到其他对象上。这里bindTo方法的第二个参数显得尤为重要，其作用是指定绑定闭包的那个对象所属的PHP类，这样，闭包就可以在其他地方访问邦定闭包的对象中受保护和私有的成员变量。
+
+
+--------------------PHP闭包的bind和bindTo------------------------------
+Closure类摘要如下：
+Closure {
+    __construct ( void )
+    public static Closure bind (Closure $closure , object $newthis [, mixed $newscope = 'static']
+    public Closure bindTo (object $newthis [, mixed $newscope = 'static' ])
+}
+方法说明：
+Closure::__construct — 用于禁止实例化的构造函数
+Closure::bind — 复制一个闭包，绑定指定的$this对象和类作用域。
+Closure::bindTo — 复制当前闭包对象，绑定指定的$this对象和类作用域。
+
+闭包bind方法：
+<?php
+/**
+ * 复制一个闭包，绑定指定的$this对象和类作用域。
+ */
+class Animal {
+    private static $cat = "cat";
+    private $dog = "dog";
+    public $pig = "pig";
+}
+/*
+ * 获取Animal类静态私有成员属性
+ */
+$cat = static function() {
+    return Animal::$cat;
+};
+
+/*
+ * 获取Animal实例私有成员属性
+ */
+$dog = function() {
+    return $this->dog;
+};
+
+/*
+ * 获取Animal实例公有成员属性
+ */
+$pig = function() {
+    return $this->pig;
+};
+//给闭包绑定了Animal实例的作用域，但未给闭包绑定$this对象
+$bindCat = Closure::bind($cat, null, new Animal());
+
+//给闭包绑定了Animal类的作用域，同时将Animal实例对象作为$this对象绑定给闭包
+$bindDog = Closure::bind($dog, new Animal(), 'Animal');
+
+//将Animal实例对象作为$this对象绑定给闭包,保留闭包原有作用域
+$bindPig = Closure::bind($pig, new Animal());
+
+echo $bindCat(),'<br>';// 根据绑定规则，允许闭包通过作用域限定操作符获取Animal类静态私有成员属性
+echo $bindDog(),'<br>';// 根据绑定规则，允许闭包通过绑定的$this对象(Animal实例对象)获取Animal实例私有成员属性
+echo $bindPig(),'<br>';// 根据绑定规则，允许闭包通过绑定的$this对象获取Animal实例公有成员属性
+
+bind函数：
+参数1($closure) : 表示闭包函数
+参数2($newthis): 相当于在函数内/外调用的区别，传类的实例表示在内部调用，NULL相当于在外部调用
+参数3($newscope): 相当于类和实例调用的区别，函数的作用域， 传类表示静态调用方式，内部可以“类名::属性”的方式使用；实例表示实例调用方式，内部可以“->”
+
+
+
+
+
+
+
+
+--------------------------php  __invoke()魔术方法----------------------
+只要变量名后有()，PHP就会查找并调用__invoke方法
+当尝试以调用函数的方式调用一个对象时，__invoke() 方法会被自动调用。
+class Person {
+    public $sex;
+    public $name;
+    public $age;
+    public function __construct($name="",  $age=25, $sex='男') {
+        $this->name = $name;
+        $this->age  = $age;
+        $this->sex  = $sex;
+    }
+    public function __invoke() {
+        echo '这可是一个对象哦';
+    }
+}
+$person = new Person('小明'); // 初始赋值
+$person();
+
+结果：这可是一个对象哦
+
+
+
+PHP最新特性：
+https://laravelacademy.org/books/modern-php
+
+
+
+
+
