@@ -12,10 +12,16 @@ composer require --dev phpunit/phpunit ^6.2<br/>
 
 安装 Monolog 日志包,做 phpunit 测试记录日志用<br/>
 composer require monolog/monolog<br/>
-2021.4.27 新增psr-4自动加载规范<br/>
-          新增composer自动加载原理（闭包，匿名函数等知识点）<br/>
-2021.4.25 新增php文件操作一些方法<br/>
-          新增git操作<br/>
-2021.4.23 新增排序方法详解<br/>
+<br/>
+2021.4.27 <br/>
+新增psr-4自动加载规范<br/>
+新增composer自动加载原理（闭包，匿名函数等知识点）<br/>
+
+2021.4.25<br/>
+新增php文件操作一些方法<br/>
+新增git操作<br/>
+
+2021.4.23<br/>
+新增排序方法详解<br/>
 
 
