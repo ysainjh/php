@@ -13,7 +13,13 @@ composer require --dev phpunit/phpunit ^6.2<br/>
 安装 Monolog 日志包,做 phpunit 测试记录日志用<br/>
 composer require monolog/monolog<br/>
 <br/>
+2021.4.29<br>
+MySQL update如何执行以及redo log 和 binlog 重要日志模块
+php-fpm状态码及php、nginx超时配置
+
 2021.4.28<br>
+mysql查询语句如何执行<br>
+closure.bind匿名函数研究<br>
 
 2021.4.27<br/>
 新增psr-4自动加载规范<br/>

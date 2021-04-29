@@ -1,0 +1,137 @@
+php-fpm和php以及Nginx的timeout超时时间的设置
+
+常见的状态码错误：
+403 – Forbidden
+404 – Not Found
+500 – Internal Server Error
+502 – Bad Gateway
+504 – GateWay TimeOut
+
+403 – Forbidden
+1.如果网站出现了错误403 forbidden，一般是nginx的服务器屏蔽了客户端的浏览器访问。
+  对你的设备或者IP或者URL各种的限制，是不允许你进行访问。 这是出于某种原因禁止访问的。
+  Web服务器认为客户端（例如，Web浏览器或我们的设备）发送的HTTP数据流正确，但是出于某些原因，禁止访问URL标识的资源，就会出现了403的错误页面。
+
+解决办法：
+a、检查你的Nginx的策略的配置。
+b、查看服务器防火墙，看看是否屏蔽了你的IP
+
+
+404 – Not Found
+2、如果网站出现了404 ，则是域名是有效的但是你访问的url则是无效的，既是此网站没有这个url链接。
+对于顶级URL：
+第一种可能性是对站点URL的请求已定向到认为该站点从未有任何页面的Web服务器。
+    如果DNS根本上损坏或者Web服务器的内部记录损坏，则可能发生这种情况。
+第二种可能性是Web服务器曾经托管过该网站，但现在不再托管它，并且不能或将不提供重定向到现在托管该网站的另一台计算机。
+    如果该站点完全死了-现在实际上在Internet上找不到任何地方-则404消息很有意义。
+    但是，如果站点最近已移动，则也可能会触发404消息。
+    这也是一个DNS问题，因为完全不应再访问旧的Web服务器-全局DNS条目更新后，就仅应访问新的Web服务器。
+
+解决办法：
+a、在现有可以访问的域名网站进行url的重写或重建
+b、迁移前的服务器和迁移后的服务器的url进行映射
+c、如果出现404错误，并且确认URL没有问题，这个错误原因一般是 http 请求时间超过了 nginx 所配置的最大连接时间，服务器自动断开连接，并返回 404 资源未找到的错误。
+   更改nginx.conf 配置文件中的 keepalive_timeout 的值（默认65秒）使浏览器和服务器连接时长增大。
+   为了方便测试，可以改成 600s 即10分钟
+
+
+500 – Internal Server Error
+3、如果遇到了网站打开出现了500的错误，那么大部分是网站后端的代码出现了错误问题，服务器不能执行完成有错误。
+   HTTP错误 500 是Web服务器遇到阻止其返回请求的，网页的问题时发生的通用HTTP状态代码。Web服务器无法更详细地说明HTTP错误500的原因。也称为内部服务器错误，错误500由您的浏览器报告，但问题出在网站本身。
+
+网站浏览器可能显示如下的500错误：
+HTTP Error 500
+HTTP Error 500 – Internal Server Error
+HTTP Error 500.0 – Internal Server Error
+500 Internal Server Error
+500 Internal server error
+500. That's an error
+Internal Server Error
+Error 500
+Temporary Error (500)
+
+解决办法：
+a、当HTTP错误500发生时，Web服务器将生成内部错误日志，（例如：查看你的php【java】错误日志）
+  该日志将提供导致问题的原因的详细信息。
+  使用这些日志，Web服务器的操作员应该能够分析500 HTTP错误的原因并进行修复。
+b.清除浏览器缓存
+
+
+502 – Bad Gateway
+4、如果出现 502 bad Gateway的原因一般是 php 程序执行超时。
+  502 Bad Gateway是指错误网关，无效网关；在互联网中表示一种网络错误。
+
+解决办法：
+这里只需要改一下php.ini 里面的 max_execution_time 的值 和 php-fpm.conf 中的 request_terminate_out 的值就可以了。
+这两项都是用来配置PHP最大执行时间，超时时php-fpm会终止脚本的执行，同时还会终止执行脚本的Worker进程。就像在日志中所看到的样，php-fpm child 18523 被终止后重新生成了新的worker进程18581，所以 nginx 发现与自己通信的连接断了，就自然会返回502错误给客户端。
+php.ini
+max_execution_time = 600
+
+php-fpm.conf
+request_terminate_timeout = 600
+
+request_terminate_timeout
+适用于，当max_execution_time由于某种原因无法终止脚本的时候，会把这个php-fpm请求干掉。
+
+web请求php执行时间受到2方面控制：
+一个是php.ini 的 max_execution_time（要注意的是sleep，http请求等待响应的时间是不算的，这里算的是真正的执行时间），
+另一个是php-fpm request_terminate_timeout 设置，这个算的是请求开始 n 秒。
+
+当超过这个时间时，PHP-FPM不只会终止脚本的执行，
+还会终止执行脚本的Worker进程。所以Nginx会发现与自己通信的连接断掉了，就会返回给客户端502错误。
+
+Nginx 502 Bad Gateway的含义是请求的PHP-CGI已经执行，但是由于读取资源的等没有执行完毕而导致PHP-CGI进程终止
+
+-----------------------------------重启php-fpm--------------------------------
+php 5.3.3以后的php-fpm不再支持php-fpm以前具有的 /usr/local/php/sbin/php-fpm (start|stop|reload)等命令，
+需要使用信号控制。
+
+master进程可以理解以下信号：
+1、INT, TERM 立刻终止
+2、QUIT 平滑终止
+3、USR1 重新打开日志文件
+4、USR2 平滑重载所有worker进程并重新载入配置和二进制模块
+
+一个直接的重启方法：
+先查看php-fpm的 master 进程id：
+ps aux | grep php-fpm | grep master | grep -v grep
+再重启php-fpm:
+kill -USR2 master进程id
+
+带进程ID的php-fpm 关闭：
+kill -INT 'cat /usr/local/php/var/run/php-fpm.pid'
+php-fpm 重启：
+kill -USR2 'cat /usr/local/php/var/run/php-fpm.pid'
+
+
+504 – GateWay TimeOut
+504错误是（网关超时） 服务器作为网关或代理，但是没有及时从上游服务器收到请求。
+服务器（不一定是 Web 服务器）正在作为一个网关或代理来完成客户（如您的浏览器或机器人）访问所需网址的请求。 为了完成您的 HTTP 请求， 该服务器访问一个上游服务器， 但没得到及时的响应。
+这通常意味着上游服务器已关闭（不响应网关 / 代理），而不是上游服务器和网关 / 代理在交换数据的协议上不一致。
+正常情况下，是由于被请求服务器发送超时引起。
+
+一般情况是产生504错误的原因是 nginx 转发给 fastcgi 的请求没有在限制时间(默认60s)内的到响应。
+
+解决方法：
+location ~ \.php$ {
+     root html;
+     fastcgi_pass 127.0.0.1:9000;
+     fastcgi_index index.php;
+     fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+     fastcgi_connect_timeout 600;
+     fastcgi_read_timeout 600;
+     fastcgi_send_timeout 600;
+     include fastcgi_params;
+}
+主要是: fastcgi_read_timeout 的时间，即是php的执行时间。
+
+--------------------------------重启nginx--------------------------
+/opt/openresty/nginx/sbin/nginx -s reload
+
+nginx的关键参数是 fastcgi 相关的 timeout
+即：
+fastcgi_connect_timeout  ，nginx 连接到 fastcgi 的超时时间
+fastcgi_read_timeout，nginx 读取 fastcgi 的内容的超时时间
+fastcgi_send_timeout，nginx 发送内容到 fastcgi 的超时时间
+
+Nginx 504 Gateway Time-out的含义是没有请求到可以执行的PHP-CGI。
